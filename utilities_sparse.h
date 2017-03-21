@@ -68,7 +68,7 @@ double compute_function_value_sparse(double* w, double *Xt, double *y,
 /// d - number of nonzeros of training example *x
 /// stepSize - stepsize parameter
 /// *ir - row indexes of nonzero elements of *x
-void update_test_point_sparse_S2GD(double *x, double *w,
+void update_test_point_sparse_SVRG(double *x, double *w,
 	double sigmoid, double sigmoidold,
 	long d, double stepSize, mwIndex *ir)
 {
@@ -92,7 +92,7 @@ void update_test_point_sparse_S2GD(double *x, double *w,
 ///		  for which the gradient is to be computed
 /// *jc - index of element in data matrix where starts the training
 ///		  exampls for which the gradient is to be computed
-void lazy_update_S2GD(double *w, double *wold, double *g, long *last_seen,
+void lazy_update_SVRG(double *w, double *wold, double *g, long *last_seen,
 	double stepSize, double lambda, long i, mwIndex *ir, mwIndex *jc)
 {
 	for (long j = *jc; j < *(jc + 1); j++) {
@@ -113,7 +113,7 @@ void lazy_update_S2GD(double *w, double *wold, double *g, long *last_seen,
 /// iters - number of steps taken in the current outer loop
 ///			also size of the just finished inner loop
 /// d - dimension of the problem
-void finish_lazy_updates_S2GD(double *w, double *wold, double *g, long *last_seen,
+void finish_lazy_updates_SVRG(double *w, double *wold, double *g, long *last_seen,
 	double stepSize, double lambda, long iters, long d)
 {
 	for (long j = 0; j < d; j++) {

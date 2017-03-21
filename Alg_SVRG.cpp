@@ -9,7 +9,7 @@
 
 /*
     USAGE:
-    hist = S2GD(w, Xt, y, lambda, stepsize, iVals, m);
+    hist = SVRG(w, Xt, y, lambda, stepsize, iVals, m);
     ==================================================================
     INPUT PARAMETERS:
     w (d x 1) - initial point; updated in place
@@ -29,7 +29,7 @@
 /// nlhs - number of output parameters requested
 ///        if set to 1, function values are computed
 /// *prhs[] - array of pointers to the input arguments
-mxArray* S2GD_dense(int nlhs, const mxArray *prhs[]) {
+mxArray* SVRG_dense(int nlhs, const mxArray *prhs[]) {
 
     //////////////////////////////////////////////////////////////////
     /// Declare variables ////////////////////////////////////////////
@@ -46,7 +46,7 @@ mxArray* S2GD_dense(int nlhs, const mxArray *prhs[]) {
 
     mxArray *plhs; // History array to return if needed
 
-    double *w       = mxGetPr(prhs[0]); // The variable to be learned
+    double *wold    = mxGetPr(prhs[0]); // The variable to be learned
     double *Xt      = mxGetPr(prhs[1]); // Data matrix (transposed)
     double *y       = mxGetPr(prhs[2]); // Labels
     double lambda   = mxGetScalar(prhs[3]); // Regularization parameter
@@ -70,7 +70,7 @@ mxArray* S2GD_dense(int nlhs, const mxArray *prhs[]) {
     // Allocate memory to store full gradient and point in which it
     // was computed
     double *w_accu = new double[d];
-    double *wold = new double[d]; for(k=0;k<d;k++){wold[k]=0;}
+    double *w = new double[d]; for(k=0;k<d;k++){w[k]=0;}
     double *gold = new double[d];
     if (evalf == true) {
         plhs = mxCreateDoubleMatrix(iters + 1, 1, mxREAL);
@@ -78,7 +78,7 @@ mxArray* S2GD_dense(int nlhs, const mxArray *prhs[]) {
     }
 
     //////////////////////////////////////////////////////////////////
-    /// The S2GD algorithm ///////////////////////////////////////////
+    /// The SVRG algorithm ///////////////////////////////////////////
     //////////////////////////////////////////////////////////////////
 
     // The outer loop
@@ -105,7 +105,7 @@ mxArray* S2GD_dense(int nlhs, const mxArray *prhs[]) {
             sigmoidold = compute_sigmoid(Xt + d*idx, wold, y[idx], d);
 
             // Update the test point
-            update_test_point_dense_S2GD(Xt + d*idx, w, wold, gold, 
+            update_test_point_dense_SVRG(Xt + d*idx, w, wold, gold, 
                 sigmoid, sigmoidold, d, stepSize, lambda);
 
             for (long j = 0; j < d; j ++){ w_accu[j] += w[j]; }
@@ -120,11 +120,8 @@ mxArray* S2GD_dense(int nlhs, const mxArray *prhs[]) {
     }
 
 
-    //////////////////////////////////////////////////////////////////
-    /// Free some memory /////////////////////////////////////////////
-    //////////////////////////////////////////////////////////////////
-    delete [] w_accu;
-    delete[] wold;
+    delete[] w_accu;
+    delete[] w;
     delete[] gold;
 
     if (evalf == true) { return plhs; }
@@ -135,7 +132,7 @@ mxArray* S2GD_dense(int nlhs, const mxArray *prhs[]) {
 /// nlhs - number of output parameters requested
 ///        if set to 1, function values are computed
 /// *prhs[] - array of pointers to the input arguments
-mxArray* S2GD_sparse(int nlhs, const mxArray *prhs[]) {
+mxArray* SVRG_sparse(int nlhs, const mxArray *prhs[]) {
 
     //////////////////////////////////////////////////////////////////
     /// Declare variables ////////////////////////////////////////////
@@ -185,7 +182,7 @@ mxArray* S2GD_sparse(int nlhs, const mxArray *prhs[]) {
     }
 
     //////////////////////////////////////////////////////////////////
-    /// The S2GD algorithm ///////////////////////////////////////////
+    /// The SVRG algorithm ///////////////////////////////////////////
     //////////////////////////////////////////////////////////////////
 
     // The outer loop
@@ -207,7 +204,7 @@ mxArray* S2GD_sparse(int nlhs, const mxArray *prhs[]) {
 
             // Update what we didn't in last few iterations
             // Only relevant coordinates
-            lazy_update_S2GD(w, wold, gold, last_seen, stepSize, lambda, i, ir, jc + idx);
+            lazy_update_SVRG(w, wold, gold, last_seen, stepSize, lambda, i, ir, jc + idx);
 
             // Compute current and old scalar sigmoid of the same example
             sigmoid = compute_sigmoid_sparse(Xt + jc[idx], w, y[idx], 
@@ -216,12 +213,12 @@ mxArray* S2GD_sparse(int nlhs, const mxArray *prhs[]) {
                                 jc[idx + 1] - jc[idx], ir + jc[idx]);
 
             // Update the test point
-            update_test_point_sparse_S2GD(Xt + jc[idx], w, sigmoid,
+            update_test_point_sparse_SVRG(Xt + jc[idx], w, sigmoid,
                 sigmoidold, jc[idx + 1] - jc[idx], stepSize, ir + jc[idx]);
         }
 
         // Update the rest of lazy_updates
-        finish_lazy_updates_S2GD(w, wold, gold, last_seen, stepSize, lambda, m[k], d);
+        finish_lazy_updates_SVRG(w, wold, gold, last_seen, stepSize, lambda, m[k], d);
     }
 
     // Evaluate the final function value
@@ -229,24 +226,17 @@ mxArray* S2GD_sparse(int nlhs, const mxArray *prhs[]) {
         hist[iters] = compute_function_value_sparse(w, Xt, y, n, d, lambda, ir, jc);
     }
 
-    //////////////////////////////////////////////////////////////////
-    /// Free some memory /////////////////////////////////////////////
-    //////////////////////////////////////////////////////////////////
 
     delete[] wold;
     delete[] gold;
     delete[] last_seen;
 
-    //////////////////////////////////////////////////////////////////
-    /// Return value /////////////////////////////////////////////////
-    //////////////////////////////////////////////////////////////////
 
     if (evalf == true) { return plhs; }
     else { return 0; }
 
 }
 
-/// Entry function of MATLAB
 /// nlhs - number of output parameters
 /// *plhs[] - array poiters to the outputs
 /// nrhs - number of input parameters
@@ -254,13 +244,9 @@ mxArray* S2GD_sparse(int nlhs, const mxArray *prhs[]) {
 /// For more info about this syntax see 
 /// http://www.mathworks.co.uk/help/matlab/matlab_external/gateway-routine.html
 void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
-
-    // First determine, whether the data matrix is stored in sparse format.
-    // If it is, use more efficient algorithm
     if (mxIsSparse(prhs[1])) {
-        plhs[0] = S2GD_sparse(nlhs, prhs);
-    }
-    else {
-        plhs[0] = S2GD_dense(nlhs, prhs);
+        plhs[0] = SVRG_sparse(nlhs, prhs);
+    } else {
+        plhs[0] = SVRG_dense(nlhs, prhs);
     }
 }

@@ -2,9 +2,10 @@
 
 clear;
 mexAll;
+addpath('/Users/zhuojiacheng/Google Drive/cookedData/')
 % load('protein.tr.mat');
-load('ijcnn1.tr.mat')
-% load('adult.mat')
+% load('ijcnn1.tr.mat')
+load('adult.mat')
 
 X = [ones(size(X,1),1) X];
 [n, d] = size(X);
@@ -28,9 +29,9 @@ iVals = int64(floor(n*rand(sum(m),1)));
 w = zeros(d, 1);
 tic;
 if (history)
-    histS2GD = S2GD(w, X, y, lambda, h, iVals, m);
+    histS2GD = Alg_SVRG(w, X, y, lambda, h, iVals, m);
 else
-    S2GD(w, X, y, lambda, h, iVals, m); 
+    Alg_SVRG(w, X, y, lambda, h, iVals, m); 
 end
 t = toc; fprintf('Time spent on S2GDcon: %f seconds \n', t);
 

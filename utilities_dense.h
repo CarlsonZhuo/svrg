@@ -78,7 +78,7 @@ void update_test_point_dense(double *w, double *g, long d, double stepSize)
 /// d - dimension of the problem
 /// stepSize - stepsize parameter
 /// lambda - regularization paramteter
-void update_test_point_dense_S2GD(double *x, double *w, double *wold, 
+void update_test_point_dense_SVRG(double *x, double *w, double *wold, 
 	double *gold, double sigmoid, double sigmoidold,
 	long d, double stepSize, double lambda)
 {

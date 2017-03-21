@@ -1,4 +1,4 @@
 
 
-mex S2GD.cpp -largeArrayDims
+mex Alg_SVRG.cpp -largeArrayDims
 mex SVRG3.cpp -largeArrayDims
