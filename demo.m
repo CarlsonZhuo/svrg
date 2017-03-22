@@ -29,11 +29,11 @@ iVals = int64(floor(n*rand(sum(m),1)));
 w = zeros(d, 1);
 tic;
 if (history)
-    histS2GD = Alg_SVRG(w, X, y, lambda, h, iVals, m);
+    histSVRG = Alg_SVRG(w, X, y, lambda, h, iVals, m);
 else
     Alg_SVRG(w, X, y, lambda, h, iVals, m); 
 end
-t = toc; fprintf('Time spent on S2GDcon: %f seconds \n', t);
+t = toc; fprintf('Time spent on SVRG: %f seconds \n', t);
 
 
 rng(23)
@@ -50,13 +50,13 @@ if (history)
 else
     SVRG3(w, X, y, lambda, h, iVals, m);
 end
-t = toc; fprintf('Time spent on S2GD:   %f seconds \n', t);
+t = toc; fprintf('Time spent on SVRG3:   %f seconds \n', t);
 
 
 
 %% Plot the results
 
 fstar = 0.31388; % for lambda = 1/n;
-semilogy(histS2GD - fstar, 'b');
+semilogy(histSVRG - fstar, 'b');
 hold on;
 semilogy(histSVRG3 - fstar, 'r');

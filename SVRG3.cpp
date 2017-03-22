@@ -89,7 +89,7 @@ mxArray* SVRG_dense(int nlhs, const mxArray *prhs[]) {
             hist[k] = compute_function_value(wold, Xt, y, n, d, lambda);
         }
 
-        for (i = 0; i < d; i++) { w[i] = wold[i]; }
+        // for (i = 0; i < d; i++) { w[i] = wold[i]; }
 
         // Initially, compute full gradient at current point w
         compute_full_gradient(Xt, wold, y, gold, n, d, lambda);
