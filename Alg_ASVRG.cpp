@@ -113,8 +113,8 @@ mxArray* ASVRG_dense(int nlhs, const mxArray *prhs[]) {
             for (long j = 0; j < d; j ++){ w_accu[j] += w[j]; }
         }
 
-        // for (i = 0; i < d; i++) { wold[i] = w[i]; }
-        for (i = 0; i < d; i++) { wold[i] = w_accu[i]/m[k]; }
+        for (i = 0; i < d; i++) { wold[i] = w[i]; }
+        // for (i = 0; i < d; i++) { wold[i] = w_accu[i]/m[k]; }
     }
 
     if (evalf == true) {
