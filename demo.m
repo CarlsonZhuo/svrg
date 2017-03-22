@@ -25,7 +25,7 @@ history = true;
 
 % h = 1 / (10 * Lmax);
 % outer_loops = 20;
-% m = int64(2*d*ones(outer_loops,1));
+% m = int64(2*n*ones(outer_loops,1));
 % iVals = int64(floor(n*rand(sum(m),1)));
 
 % wSVRG = zeros(d, 1);
