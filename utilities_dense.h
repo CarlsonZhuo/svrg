@@ -108,6 +108,30 @@ void update_test_point_dense_ASVRG(double *x, double *w, double *wold,
 }
 
 /// Update the test point *w in place once you have everything prepared
+/// *x - training example
+/// *w - test point; updated in place
+/// *wold - old test point, where full gradient was computed
+/// *gold - full gradient computed at point *wold
+/// sigmoid - sigmoid at current point *w
+/// sigmoidold - sigmoid at old point *wold
+/// d - dimension of the problem
+/// stepSize - stepsize parameter
+/// lambda - regularization paramteter
+void update_test_point_dense_Katyusha(double *x, double *w, double *wold, 
+	double *gold, double sigmoid, double sigmoidold,
+	long d, double stepSize, double lambda, 
+	double *ww, double *ym, double *zm, double *zm_prev, double tau, double tau2, long iter)
+{
+	for (long j = 0; j < d; j++) {
+		zm_prev[j] = zm[j];
+		zm[j] -= stepSize * (gold[j] + x[j] *
+			(sigmoid - sigmoidold) + lambda * (w[j] - wold[j]));
+		ym[j] = w[j] + (zm[j] - zm_prev[j]) * tau;
+		ww[j] += ym[j] * pow(tau2, iter);
+	}
+}
+
+/// Update the test point *w in place once you have everything prepared
 /// *w - test point; updated in place
 /// *g - aggregated gradient
 /// d - dimension of the problem
