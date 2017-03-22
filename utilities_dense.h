@@ -87,6 +87,27 @@ void update_test_point_dense_SVRG(double *x, double *w, double *wold,
 }
 
 /// Update the test point *w in place once you have everything prepared
+/// *x - training example
+/// *w - test point; updated in place
+/// *wold - old test point, where full gradient was computed
+/// *gold - full gradient computed at point *wold
+/// sigmoid - sigmoid at current point *w
+/// sigmoidold - sigmoid at old point *wold
+/// d - dimension of the problem
+/// stepSize - stepsize parameter
+/// lambda - regularization paramteter
+void update_test_point_dense_ASVRG(double *x, double *w, double *wold, 
+	double *gold, double sigmoid, double sigmoidold,
+	long d, double stepSize, double lambda, double *y, double tau)
+{
+	for (long j = 0; j < d; j++) {
+		y[j] -= stepSize * (gold[j] + x[j] *
+			(sigmoid - sigmoidold) + lambda * (w[j] - wold[j]));
+		w[j] = y[j] * tau + wold[j] * (1-tau);
+	}
+}
+
+/// Update the test point *w in place once you have everything prepared
 /// *w - test point; updated in place
 /// *g - aggregated gradient
 /// d - dimension of the problem

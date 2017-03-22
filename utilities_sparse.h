@@ -122,6 +122,74 @@ void finish_lazy_updates_SVRG(double *w, double *wold, double *g, long *last_see
 	}
 }
 
+/// Updates the test point *w in place
+/// Makes the step only in the nonzero coordinates of *x,
+/// and without regularizer. The regularizer step is constant
+/// across more iterations --- updated in lazy_updates
+/// *x - training example
+/// *w - test point; updated in place
+/// sigmoid - sigmoid at current point *w
+/// sigmoidold - sigmoid at old point *wold
+/// d - number of nonzeros of training example *x
+/// stepSize - stepsize parameter
+/// *ir - row indexes of nonzero elements of *x
+void update_test_point_sparse_ASVRG(double *x, double *w,
+	double sigmoid, double sigmoidold,
+	long d, double stepSize, mwIndex *ir, double *y, double tau)
+{
+	for (long j = 0; j < d; j++) {
+		y[ir[j]] -= stepSize * (x[j] * (sigmoid - sigmoidold));
+	}
+}
+
+/// Performs "lazy, in time" update, to obtain current value of 
+/// specific coordinates of test point, before a sparse gradient 
+/// is to be computed. For S2GD algorithm
+/// *w - test point; updated in place
+/// *wold - old test point, where full gradient was computed
+/// *g - full gradient computed at point *wold
+/// *last_seen - numbers of iterations when corresponding 
+///				 coordinate was updated last time
+/// stepSize - stepsize parameter
+/// lambda - regularization paramteter
+/// i - number of iteration from which this lazy update was called
+/// *ir - row indexes of nonzero elements of training example,
+///		  for which the gradient is to be computed
+/// *jc - index of element in data matrix where starts the training
+///		  exampls for which the gradient is to be computed
+void lazy_update_ASVRG(double *w, double *wold, double *g, long *last_seen,
+	double stepSize, double lambda, long i, mwIndex *ir, mwIndex *jc,
+	double *y, double tau)
+{
+	for (long j = *jc; j < *(jc + 1); j++) {
+		y[ir[j]] -= stepSize * (i - last_seen[ir[j]]) *
+			(g[ir[j]] + lambda * (w[ir[j]] - wold[ir[j]]));
+		w[ir[j]] = y[ir[j]] * tau + wold[ir[j]] * (1-tau);
+		last_seen[ir[j]] = i;
+	}
+}
+
+/// Finises the "lazy" updates at the end of outer loop
+/// *w - test point; updated in place
+/// *wold - old test point, where full gradient was computed
+/// *g - full gradient computed at point *wold
+/// *last_seen - numbers of iterations when corresponding 
+///				 coordinate was updated last time
+/// stepSize - stepsize parameter
+/// lambda - regularization paramteter
+/// iters - number of steps taken in the current outer loop
+///			also size of the just finished inner loop
+/// d - dimension of the problem
+void finish_lazy_updates_ASVRG(double *w, double *wold, double *g, long *last_seen,
+	double stepSize, double lambda, long iters, long d, double *y, double tau)
+{
+	for (long j = 0; j < d; j++) {
+		y[j] -= stepSize * (iters - last_seen[j]) *
+			(g[j] + lambda * (w[j] - wold[j]));
+		w[j] = y[j] * tau + wold[j] * (1-tau);
+	}
+}
+
 /// Performs "lazy, in time" update, to obtain current value of 
 /// specific coordinates of test point, before a sparse gradient 
 /// is to be computed. For S2GD algorithm
