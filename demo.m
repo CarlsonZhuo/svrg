@@ -4,12 +4,12 @@ clear;
 mexAll;
 addpath('/Users/zhuojiacheng/Google Drive/cookedData/')
 % load('protein.tr.mat');
-% load('ijcnn1.tr.mat')
-load('adult.mat')
+load('ijcnn1.tr.mat')
+% load('adult.mat')
 
 X = [ones(size(X,1),1) X];
 [n, d] = size(X);
-X = full(X');
+X = X';
 
 lambda = 1/n;
 Lmax = (0.25 * max(sum(X.^2,1)) + lambda);
@@ -19,6 +19,7 @@ Lmax = (0.25 * max(sum(X.^2,1)) + lambda);
 history = true;
 
 
+% SVRG
 rng(23);
 
 h = 1 / (10 * Lmax);
@@ -26,32 +27,32 @@ outer_loops = 20;
 m = int64(2*d*ones(outer_loops,1));
 iVals = int64(floor(n*rand(sum(m),1)));
 
-w = zeros(d, 1);
+wSVRG = zeros(d, 1);
 tic;
 if (history)
-    histSVRG = Alg_SVRG(w, X, y, lambda, h, iVals, m);
+    histSVRG = Alg_SVRG(wSVRG, X, y, lambda, h, iVals, m);
 else
-    Alg_SVRG(w, X, y, lambda, h, iVals, m); 
+    Alg_SVRG(wSVRG, X, y, lambda, h, iVals, m); 
 end
 t = toc; fprintf('Time spent on SVRG: %f seconds \n', t);
 
 
-rng(23)
+%% SAG
+rng(23);
 
-h = 1 / (10 * Lmax);
-outer_loops = 20;
-m = int64(2*d*ones(outer_loops,1));
-iVals = int64(floor(n*rand(sum(m),1)));
+h = 1 / (6 * Lmax);
+passes = 40;
 
-w = zeros(d, 1);
+iVals = int64(floor(n*rand(passes*n,1)));
+
+wSAG = zeros(d, 1);
 tic;
 if (history)
-    histSVRG3 = SVRG3(w, X, y, lambda, h, iVals, m);
+    histSAG = Alg_SAG(wSAG, X, y, lambda, h, iVals);
 else
-    SVRG3(w, X, y, lambda, h, iVals, m);
+    Alg_SAG(wSAG, X, y, lambda, h, iVals);
 end
-t = toc; fprintf('Time spent on SVRG3:   %f seconds \n', t);
-
+t = toc; fprintf('Time spent on SAG:     %f seconds \n', t);
 
 
 %% Plot the results
@@ -59,4 +60,4 @@ t = toc; fprintf('Time spent on SVRG3:   %f seconds \n', t);
 fstar = 0.31388; % for lambda = 1/n;
 semilogy(histSVRG - fstar, 'b');
 hold on;
-semilogy(histSVRG3 - fstar, 'r');
+semilogy(histSAG - fstar, 'r');
