@@ -1,7 +1,11 @@
 %% Prepare the dataset
 
 clear;
-mexAll;
+mex Alg_SVRG.cpp -largeArrayDims;
+mex Alg_SVRG2.cpp -largeArrayDims;
+mex Alg_ASVRG.cpp -largeArrayDims;
+mex Alg_Katyusha.cpp -largeArrayDims;
+
 addpath('cookedData/')
 % load('protein.tr.mat');
 load('ijcnn1.tr.mat')
@@ -38,65 +42,24 @@ else
 end
 t = toc; fprintf('Time spent on SVRG: %f seconds \n', t);
 
-
-%% SAG
+%% SVRG2
 rng(23);
 
-h = 1 / (6 * Lmax);
-passes = 40;
-
-iVals = int64(floor(n*rand(passes*n,1)));
-
-wSAG = zeros(d, 1);
-tic;
-if (history)
-    histSAG = Alg_SAG(wSAG, X, y, lambda, h, iVals);
-else
-    Alg_SAG(wSAG, X, y, lambda, h, iVals);
-end
-t = toc; fprintf('Time spent on SAG:     %f seconds \n', t);
-
-%% SAG2
-rng(23);
-
-h = 1 / (6 * Lmax);
-passes = 40;
-
-iVals = int64(floor(n*rand(passes*n,1)));
-
-wSAG2 = zeros(d, 1);
-tic;
-if (history)
-    histSAG2 = Alg_SAGA(wSAG2, X, y, lambda, h, iVals);
-else
-    SAG2(wSAG2, X, y, lambda, h, iVals);
-end
-t = toc; fprintf('Time spent on SAGA:     %f seconds \n', t);
-
-
-%% ASVRG    
-rng(23);
-
-w_ASVRG = zeros(d, 1);
-%     tau  = 1 - Lmax*lambda/(1-Lmax*lambda);
-alpha = 1 / (3*Lmax);
-tau = 0.85;
-
+h = 1 / (10 * Lmax);
 outer_loops = 20;
 m = int64(2*n*ones(outer_loops,1));
 iVals = int64(floor(n*rand(sum(m),1)));
 
+wSVRG2 = zeros(d, 1);
 tic;
 if (history)
-    histASVRG = Alg_ASVRG(w_ASVRG, X, y, lambda, alpha, iVals, m, tau);
+    histSVRG2 = Alg_SVRG2(wSVRG2, X, y, lambda, h, iVals, m);
 else
-    Alg_ASVRG(w_ASVRG, X, y, lambda, alpha, tau, iVals, m, tau);
+    Alg_SVRG2(wSVRG2, X, y, lambda, h, iVals, m); 
 end
-time_ASVRG = toc;
-fprintf('Time spent on ASVRG: %f seconds \n', time_ASVRG);
-xASVRG_l2 = 0:outer_loops;
+t = toc; fprintf('Time spent on SVRG: %f seconds \n', t);
 
-
+%% ASVRG    
 rng(23);
 
 w_ASVRG_d = zeros(d, 1);
@@ -142,17 +105,15 @@ xKatyusha_l2 = 0:outer_loops;
 
 %% Plot the results
 
-% fstar = 0.2103112055; % for lambda = 1/n; ijcnn1
-fstar = 0.2364117205;
+fstar = 0.23641172058; % for lambda = 1/n; ijcnn1
+% fstar = 0.2364117205;
 % fstar = 0.343943296559; % for lambda = 1/n; adult 0.331643965049940
-% fstar = 0.3137; % protein
-semilogy(histSAG2 - fstar, 'b');
-hold on;
-semilogy(histSAG - fstar, '--');
+% fstar = 0.31984097907; % protein
+semilogy(histSVRG2 - fstar, 'b');
 hold on;
 semilogy(histSVRG - fstar, 'r');
 hold on;
-semilogy(histASVRG - fstar, 'g');
+semilogy(histASVRG_d - fstar, 'g');
 hold on;
 semilogy(histKatyusha - fstar, 'y');
 % hold on;
