@@ -142,21 +142,6 @@ void update_test_point_sparse_ASVRG(double *x, double *w,
 	}
 }
 
-/// Performs "lazy, in time" update, to obtain current value of 
-/// specific coordinates of test point, before a sparse gradient 
-/// is to be computed. For S2GD algorithm
-/// *w - test point; updated in place
-/// *wold - old test point, where full gradient was computed
-/// *g - full gradient computed at point *wold
-/// *last_seen - numbers of iterations when corresponding 
-///				 coordinate was updated last time
-/// stepSize - stepsize parameter
-/// lambda - regularization paramteter
-/// i - number of iteration from which this lazy update was called
-/// *ir - row indexes of nonzero elements of training example,
-///		  for which the gradient is to be computed
-/// *jc - index of element in data matrix where starts the training
-///		  exampls for which the gradient is to be computed
 void lazy_update_ASVRG(double *w, double *wold, double *g, long *last_seen,
 	double stepSize, double lambda, long i, mwIndex *ir, mwIndex *jc,
 	double *y, double tau)
@@ -189,6 +174,70 @@ void finish_lazy_updates_ASVRG(double *w, double *wold, double *g, long *last_se
 		w[j] = y[j] * tau + wold[j] * (1-tau);
 	}
 }
+
+// Katyusha
+void lazy_update_Katyusha(double *w, double *wold, double *ww, double *g, long *last_seen,
+	double stepSize, double lambda, long i, mwIndex *ir, mwIndex *jc,
+	double *ym, double *zm, double tau, double tau1, double tau2)
+{
+	for (long j = *jc; j < *(jc + 1); j++) {
+		double tmp = stepSize * (i - last_seen[ir[j]]) *
+			(g[ir[j]] + lambda * (w[ir[j]] - wold[ir[j]]));
+		zm[ir[j]] -= tmp;
+		ym[ir[j]] -= tmp*tau;
+		for (long k = last_seen[ir[j]]; k < i; k++) {
+			ww[ir[j]] -= tmp * tau * pow(tau2, k); 	
+		}
+		// ww[ir[j]] += tmp*tau;
+		w[ir[j]] = zm[ir[j]]*tau + wold[ir[j]]*0.5 + ym[ir[j]]*tau1;
+		last_seen[ir[j]] = i;
+	}
+}
+
+void update_test_point_sparse_Katyusha(double *x, double *w, double *ww,
+	double sigmoid, double sigmoidold,
+	long d, double stepSize, double *ym, double *zm, double *zm_prev, double tau, double tau2, 
+	mwIndex *ir, mwIndex *jc, long iter)
+{
+	for (long j = 0; j < d; j++) {
+		zm_prev[ir[j]] = zm[ir[j]];
+		zm[ir[j]] -= stepSize * (x[j] * (sigmoid - sigmoidold));
+		ym[ir[j]] = w[ir[j]] + (zm[ir[j]] - zm_prev[ir[j]]) * tau;
+		ww[ir[j]] += ym[ir[j]] * pow(tau2, iter);
+		// ww[ir[j]] += ym[ir[j]];
+	}
+}
+
+void finish_lazy_updates_Katyusha(double *w, double *wold, double *ww, double *g, long *last_seen,
+	double stepSize, double lambda, long iter, long d, 
+	double *ym, double *zm, double tau, double tau1, double tau2)
+{
+	for (long j = 0; j < d; j++) {
+		double tmp = stepSize * (iter - last_seen[j]) * (g[j] + lambda * (w[j] - wold[j]));
+		zm[j] -= tmp;
+		ym[j] -= tmp*tau;
+		w[j] = zm[j]*tau + wold[j]*0.5 + ym[j]*tau1;
+		for (long k = last_seen[j]; k < iter; k++) {
+			ww[j] -= tmp * tau * pow(tau2, k); 	
+		}
+		// ww[j] += tmp*tau; 
+	}
+}
+
+
+// void update_test_point_dense_Katyusha(double *x, double *w, double *wold, 
+// 	double *gold, double sigmoid, double sigmoidold,
+// 	long d, double stepSize, double lambda, 
+// 	double *ww, double *ym, double *zm, double *zm_prev, double tau, double tau2, long iter)
+// {
+// 	for (long j = 0; j < d; j++) {
+// 		zm_prev[j] = zm[j];
+// 		zm[j] -= stepSize * (gold[j] + x[j] *
+// 			(sigmoid - sigmoidold) + lambda * (w[j] - wold[j]));
+// 		ym[j] = w[j] + (zm[j] - zm_prev[j]) * tau;
+// 		ww[j] += ym[j] * pow(tau2, iter);
+// 	}
+// }
 
 /// Performs "lazy, in time" update, to obtain current value of 
 /// specific coordinates of test point, before a sparse gradient 
