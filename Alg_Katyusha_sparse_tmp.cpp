@@ -250,28 +250,39 @@ mxArray* Katyusha_sparse(int nlhs, const mxArray *prhs[]) {
 
                 // update zm
                 zm[ir[j]] = (1/tau1) * zm[ir[j]] - (stepSize/tau1) * (tmp + zm_prev[ir[j]]);
+                ym[ir[j]] = tau3 * w[ir[j]] - (1/tau2) * (zm_prev[ir[j]] + tmp);
+                ww[ir[j]] += ym[ir[j]];
+                w[ir[j]] = zm[ir[j]] * tau + wold[ir[j]] * 0.5 + ym[ir[j]] * (0.5-tau);
+
                 // the loop calculates the sum of a geometric progression
                 // i.e. a(n) = (q^n) * a(0) - (1-q^(n-1))/(1-q) * C
                 // where q = 1/tau1, C = stepSize/tau1 * tmp
                 for (long ii = last_seen[ir[j]]+1; ii < i; ii++) {
                     zm[ir[j]] = (1/tau1) * zm[ir[j]] - (stepSize/tau1) * tmp;
+                    ym[ir[j]] = tau3 * w[ir[j]] - (1/tau2) * tmp;
+                    ww[ir[j]] += ym[ir[j]];
+                    w[ir[j]] = zm[ir[j]] * tau + wold[ir[j]] * 0.5 + ym[ir[j]] * (0.5-tau);
                 }
+
+                
 
                 // update ym
                 // if ir[j] appeared in last iter
                 // then (1/tau2) * zm_prev[ir[j]] is included in the subtrahend
-                if (last_seen[ir[j]] == i-1) {
-                    ym[ir[j]] = tau3 * w[ir[j]] - (1/tau2) * (zm_prev[ir[j]] + tmp);
-                } else {
-                    ym[ir[j]] = tau3 * w[ir[j]] - (1/tau2) * tmp;
-                }
+                // if (last_seen[ir[j]] == i-1) {
+                //     ym[ir[j]] = tau3 * w[ir[j]] - (1/tau2) * (zm_prev[ir[j]] + tmp);
+                // } else {
+                //     ym[ir[j]] = tau3 * w[ir[j]] - (1/tau2) * tmp;
+                // }
 
-                // update ww
-                ww[ir[j]] += (i - last_seen[ir[j]]) * (tau3 * w[ir[j]] - (1/tau2) * tmp);
-                ww[ir[j]] -= (1/tau2) * zm_prev[ir[j]];
+                // // update ww
+                // ww[ir[j]] += (i - last_seen[ir[j]]) * (tau3 * w[ir[j]] - (1/tau2) * tmp);
+                // ww[ir[j]] -= (1/tau2) * zm_prev[ir[j]];
 
-                // update w
-                w[ir[j]] = zm[ir[j]] * tau + wold[ir[j]] * 0.5 + ym[ir[j]] * (0.5-tau);
+                // // update w
+                // w[ir[j]] = zm[ir[j]] * tau + wold[ir[j]] * 0.5 + ym[ir[j]] * (0.5-tau);
+
+
                 last_seen[ir[j]] = i;                
             }
 
@@ -295,22 +306,33 @@ mxArray* Katyusha_sparse(int nlhs, const mxArray *prhs[]) {
         for (j = 0; j < d; j++) {
             double tmp = (gold[j] + lambda * (w[j] - wold[j]));
 
-            // update zm
-            zm[j] = 1/tau1 * zm_prev[j] - stepSize/tau1 * (tmp + zm_prev[j]);
-            for (long ii = last_seen[j]+1; ii < i; ii++) {
-                zm[j] = (1/tau1) * zm[j] - stepSize/tau1 * tmp;
-            }
+            zm[j] = (1/tau1) * zm[j] - (stepSize/tau1) * (tmp + zm_prev[j]);
+            ym[j] = tau3 * w[j] - (1/tau2) * (zm_prev[j] + tmp);
+            ww[j] += ym[j];
+            w[j] = zm[j] * tau + wold[j] * 0.5 + ym[j] * (0.5-tau);
 
-            // update ym
-            if (last_seen[j] == i-1) {
-                ym[j] = tau3 * w[j] - (1/tau2) * (zm_prev[j] + tmp);
-            } else {
+            for (long ii = last_seen[j]+1; ii < i; ii++) {
+                zm[j] = (1/tau1) * zm[j] - (stepSize/tau1) * tmp;
                 ym[j] = tau3 * w[j] - (1/tau2) * tmp;
+                ww[j] += ym[j];
+                w[j] = zm[j] * tau + wold[j] * 0.5 + ym[j] * (0.5-tau);
             }
+            // update zm
+            // zm[j] = 1/tau1 * zm_prev[j] - stepSize/tau1 * (tmp + zm_prev[j]);
+            // for (long ii = last_seen[j]+1; ii < i; ii++) {
+            //     zm[j] = (1/tau1) * zm[j] - stepSize/tau1 * tmp;
+            // }
+
+            // // update ym
+            // if (last_seen[j] == i-1) {
+            //     ym[j] = tau3 * w[j] - (1/tau2) * (zm_prev[j] + tmp);
+            // } else {
+            //     ym[j] = tau3 * w[j] - (1/tau2) * tmp;
+            // }
             
-            // update ww
-            ww[j] += (i - last_seen[j]) * (tau3 * w[j] - (1/tau2) * tmp);
-            ww[j] -= (1/tau2) * zm_prev[j];
+            // // update ww
+            // ww[j] += (i - last_seen[j]) * (tau3 * w[j] - (1/tau2) * tmp);
+            // ww[j] -= (1/tau2) * zm_prev[j];
         }
 
         for (i = 0; i < d; i++) { 
